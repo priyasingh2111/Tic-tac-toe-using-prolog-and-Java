@@ -1,0 +1,594 @@
+import java.awt.* ; 
+import java.awt.event.* ; 
+import java.io.* ; 
+import java.net.* ;
+import javax.swing.* ; 
+import javax.swing.border.* ; 
+import javax.swing.Timer;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+
+
+public class TicTacToe extends JFrame 
+                       implements ActionListener {
+   JButton b11,b21,b31,
+           b12,b22,b32,
+           b13,b23,b33 ;
+   JButton startGameButton, startNGameButton, stopResetButton;
+   JCheckBox humanCheckbox, computerCheckbox;
+   boolean myturn ;
+   JLabel playerInfoLabel,gameNumberLabel,p;
+   JPanel panel;
+   JPanel additionalPanel;
+   BufferedReader br ; 
+   BufferedWriter bw ;
+   Thread connection ; 
+   Process prologProcess ; 
+   Socket sock ;
+   private Timer gameTimer;
+   JTextField numGamesField;
+   private static String prolog = "C:/swipl/bin/swipl";
+   private static String ttt = "C:/ttt-PXS220067/ttt.pl";
+   private int p1 =0,p2=0;
+   private int gamesCounter = 1,c=1;
+
+   /**
+     *  Create a tic tac toe game, 
+     *  prolog is the prolog command (e.g. "/opt/local/bin/swipl").
+     *  ttt is the locator for ttt.pl (e.g. "/javalib/TicTacToe/ttt.pl").
+     */
+   public TicTacToe(String prolog, String ttt) { 
+	   
+	// Create a label for displaying player information and game number
+      playerInfoLabel = new JLabel("Player1 (X): Human    Player2: Computer");
+      gameNumberLabel = new JLabel("Game #: "+ gamesCounter +"   Wins:- Player1(X): "+ p1 +"   Player2(O): " + p2);
+      // Set font and add padding to the labels for better appearance
+      Font labelFont = new Font("Arial", Font.PLAIN, 14);
+      playerInfoLabel.setFont(labelFont);
+      gameNumberLabel.setFont(labelFont);
+      EmptyBorder labelPadding = new EmptyBorder(0, 10, 10, 10); // Adjust padding as needed
+      playerInfoLabel.setBorder(labelPadding);
+      gameNumberLabel.setBorder(labelPadding);
+      
+      b11 = new JButton("") ; 
+      b21 = new JButton("") ; 
+      b31 = new JButton("") ; 
+      b12 = new JButton("") ; 
+      b22 = new JButton("") ; 
+      b32 = new JButton("") ; 
+      b13 = new JButton("") ; 
+      b23 = new JButton("") ; 
+      b33 = new JButton("") ; 
+      b11.setActionCommand("(1,1).") ; // prolog reads pair term
+      b21.setActionCommand("(2,1).") ; 
+      b31.setActionCommand("(3,1).") ; 
+      b12.setActionCommand("(1,2).") ; 
+      b22.setActionCommand("(2,2).") ; 
+      b32.setActionCommand("(3,2).") ; 
+      b13.setActionCommand("(1,3).") ; 
+      b23.setActionCommand("(2,3).") ; 
+      b33.setActionCommand("(3,3).") ; 
+      Font f = new Font("monospaced",Font.PLAIN,64) ;
+      b11.setFont(f) ; 
+      b21.setFont(f) ; 
+      b31.setFont(f) ; 
+      b12.setFont(f) ; 
+      b22.setFont(f) ; 
+      b32.setFont(f) ; 
+      b13.setFont(f) ; 
+      b23.setFont(f) ; 
+      b33.setFont(f) ; 
+      b11.addActionListener(this) ; 
+      b21.addActionListener(this) ; 
+      b31.addActionListener(this) ; 
+      b12.addActionListener(this) ; 
+      b22.addActionListener(this) ; 
+      b32.addActionListener(this) ; 
+      b13.addActionListener(this) ; 
+      b23.addActionListener(this) ; 
+      b33.addActionListener(this) ; 
+      
+      
+      
+      
+      EmptyBorder padbor = new EmptyBorder(10,10,10,30);
+      panel = new JPanel() ; 
+      panel.setLayout(new GridLayout(3,3)) ; 
+      panel.setBorder(padbor);
+      panel.add(b11) ; 
+      panel.add(b21) ; 
+      panel.add(b31) ; 
+      panel.add(b12) ; 
+      panel.add(b22) ; 
+      panel.add(b32) ; 
+      panel.add(b13) ; 
+      panel.add(b23) ; 
+      panel.add(b33) ; 
+      
+   // Set the panel to be initially invisible
+      panel.setVisible(false);
+      
+      additionalPanel = new JPanel();
+      additionalPanel.setLayout(new FlowLayout());
+      p = new JLabel("TIC TAC TOE");
+      additionalPanel.add(p);
+      EmptyBorder pp = new EmptyBorder(60, 30, 10, 10);
+      additionalPanel.setBorder(pp);
+      p.setFont(new Font("Arial", Font.BOLD, 30));
+      
+      
+      // Create a JPanel for the buttons
+      JPanel buttonPanel = new JPanel();
+      buttonPanel.setLayout(new GridLayout(7, 1, 0, 10)); // 3 rows, 1 column, 10 pixels vertical gap
+      // Set padding on top and right (10 pixels)
+      EmptyBorder panelPadding = new EmptyBorder(10, 0, 10, 10);
+      buttonPanel.setBorder(panelPadding);
+      
+      // Add buttons to the buttonPanel
+      startGameButton = new JButton("Start Game");
+      startNGameButton = new JButton("Start N Game");
+      stopResetButton = new JButton("Stop/Reset");
+      stopResetButton.setActionCommand("(4,4).") ; 
+      
+      
+      // Set font and preferred size for the buttons
+      Font buttonFont = new Font("Arial", Font.PLAIN, 14); // Set the font size for buttons
+      startGameButton.setFont(buttonFont);
+      startGameButton.setPreferredSize(new Dimension(120, 50)); // Set preferred size to 150x100
+
+      startNGameButton.setFont(buttonFont);
+      startNGameButton.setPreferredSize(new Dimension(120, 50)); // Set preferred size to 150x100
+
+      stopResetButton.setFont(buttonFont);
+      stopResetButton.setPreferredSize(new Dimension(120, 50)); // Set preferred size to 150x100
+      
+      
+      // Add padding to the buttons
+      EmptyBorder buttonPadding = new EmptyBorder(10, 10, 10, 10); // 10 pixels padding on all sides
+      startGameButton.setBorder(buttonPadding);
+      startNGameButton.setBorder(buttonPadding);
+      stopResetButton.setBorder(buttonPadding);
+
+      
+      // Add action listeners to these buttons (functionality to be added later)
+      startGameButton.addActionListener(this);
+      startNGameButton.addActionListener(this);
+      stopResetButton.addActionListener(this);
+      
+      // Create panel for checkboxes
+      JPanel checkboxPanel = new JPanel(new GridLayout(2, 2, 0, 0));
+   // Set preferred size for the checkboxPanel
+      checkboxPanel.setPreferredSize(new Dimension(165, 50)); // Replace width and height with your desired dimensions
+      checkboxPanel.add(new JLabel("Player1 (X):"));
+      humanCheckbox = new JCheckBox("Human");
+      computerCheckbox = new JCheckBox("Computer");
+      checkboxPanel.add(humanCheckbox);
+      checkboxPanel.add(new JLabel(""));
+      checkboxPanel.add(computerCheckbox);
+      
+
+      humanCheckbox.setSelected(true);
+      computerCheckbox.addActionListener(new ActionListener() {
+          @Override
+          public void actionPerformed(ActionEvent e) {
+              humanCheckbox.setSelected(false);
+              updatePlayerInfoLabel();
+          }
+      });
+       humanCheckbox.addActionListener(new ActionListener() {
+          @Override
+          public void actionPerformed(ActionEvent e) {
+              computerCheckbox.setSelected(false);
+              updatePlayerInfoLabel();
+          }
+      });
+      
+      // Add a JTextField for user input
+      numGamesField = new JTextField(4); // 10 columns wide
+      numGamesField.setFont(new Font("Arial", Font.PLAIN, 14)); // Set font for the text field
+
+      // Create panel for checkboxes and user input
+      JPanel inputPanel = new JPanel(new FlowLayout());
+      inputPanel.add(new JLabel("N (# of games):"));
+      inputPanel.add(numGamesField);
+      
+      // Add buttons to the buttonPanel
+      buttonPanel.add(startGameButton);
+      buttonPanel.add(startNGameButton);
+      buttonPanel.add(stopResetButton);
+      buttonPanel.add(inputPanel); // Add the input panel for user input
+      buttonPanel.add(checkboxPanel);
+      
+      
+      // Add the Tic-Tac-Toe grid and buttonPanel to the main content pane
+      JPanel mainPanel = new JPanel();
+      mainPanel.setLayout(new BorderLayout());
+      mainPanel.add(panel, BorderLayout.CENTER); // Assuming 'panel' is the JPanel containing Tic-Tac-Toe grid
+      mainPanel.add(additionalPanel,BorderLayout.WEST);
+      mainPanel.add(buttonPanel, BorderLayout.EAST); // Add the buttonPanel to the right
+      
+   // Create panels for player information label and game number label
+      JPanel playerInfoPanel = new JPanel();
+      playerInfoPanel.add(playerInfoLabel);
+
+      JPanel gameNumberPanel = new JPanel();
+      gameNumberPanel.add(gameNumberLabel);
+
+
+      // Add playerInfoPanel to the main panel in the BorderLayout.NORTH position
+      mainPanel.add(playerInfoPanel, BorderLayout.NORTH);
+
+      // Add gameNumberPanel to the main panel in the BorderLayout.SOUTH position
+      mainPanel.add(gameNumberPanel, BorderLayout.SOUTH);
+      
+      //this.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE) ; 
+      this.setTitle("Tic Tac Toe (PXS220067)") ; 
+      this.getContentPane().add(mainPanel);
+      this.setSize(500,360) ;
+      this.setLocation(900,300) ; 
+
+      connect();
+      
+      gameTimer = new Timer(1000, new ActionListener() {
+    	    @Override
+    	    public void actionPerformed(ActionEvent e) {
+    	        clearBoard();
+    	        startComputerVsComputerGame();
+    	    }
+    	});
+
+   } 
+  private void connect()
+  {
+	  Connector connector = new Connector(54321) ; 
+	   connector.start() ; 
+	      try {
+	         sock = new Socket("127.0.0.1",54321) ;
+	         br = new BufferedReader(new InputStreamReader(sock.getInputStream())) ; 
+	         bw = new BufferedWriter(new OutputStreamWriter(sock.getOutputStream())) ; 
+	      } catch(Exception x) { System.out.println(x) ; }
+
+	      connection = new Thread() {
+	         public void run() { 
+	            while(true) {
+	               try{
+	                  String s = br.readLine() ; 
+	                  computer_move(s) ; 
+	               } catch(Exception xx) { System.out.println(xx) ; }
+	            }  
+	         }
+	      } ;
+	      connection.start() ;
+
+	      Thread shows = new Thread() { 
+	         public void run() { 
+	            setVisible(true) ;
+	         }
+	      } ;
+	      EventQueue.invokeLater(shows);
+
+	      // Start the prolog player
+
+	      try { 
+	         prologProcess = 
+	           Runtime.getRuntime().exec(prolog + " -f " + ttt) ; 
+	      } catch(Exception xx) {System.out.println(xx) ; }
+     
+
+     // On closing, kill the prolog process first and then exit
+     this.addWindowListener(new WindowAdapter() { 
+        public void windowClosing(WindowEvent w) { 
+           if (prologProcess != null) prologProcess.destroy() ;
+           System.exit(0) ; 
+        }
+     }) ;
+  }
+   
+   private void clearBoard() {
+	    // Reset button text and background colors
+	    JButton[] buttons = {b11, b21, b31, b12, b22, b32, b13, b23, b33};
+	    for (JButton button : buttons) {
+	        button.setText("");
+	        button.setBackground(null); // Clear background color
+	        button.setEnabled(true); // Enable the button for interaction
+	    }
+   }
+
+
+//       /opt/local/bin/swipl   /javalib/TicTacToe/ttt.pl
+   public static void main(String[] args) { 
+      boolean noargs = true ; 
+      try { 
+         prolog = args[0] ;
+         ttt = args[1] ;
+         noargs = false ; 
+      } 
+      catch (Exception xx) {
+         System.out.println("usage: java TicTactoe  <where prolog>  <where ttt>") ; 
+      }
+      if (noargs) { 
+         Object[] message = new Object[4] ; 
+         message[0] = new Label("  prolog command") ;
+         message[1] = new JTextField(prolog) ; 
+         message[2] = new Label("  where ttt.pl ") ;
+         message[3] = new JTextField(ttt) ; 
+         try { 
+            int I = JOptionPane.showConfirmDialog(null,message,"Where are Prolog and ttt.pl? ",JOptionPane.OK_CANCEL_OPTION) ;  
+            if (I == 2 | I == 1) System.exit(0) ;
+            System.out.println(I) ; 
+            new TicTacToe(((JTextField)message[1]).getText().trim(),((JTextField)message[3]).getText().trim()) ; 
+         } catch(Exception yy) {} 
+      }
+      else
+         new TicTacToe(prolog,ttt) ; 
+   }
+
+   void computer_move(String s) { // " x ## y '
+      String[] c = s.split(",") ; 
+      int x = Integer.parseInt(c[0].trim()), 
+          y = Integer.parseInt(c[1].trim()) ; 
+      System.out.println(x+","+y) ; 
+      if (x == 1) {
+         if (y == 1) b11.setText("O") ; 
+         else if (y == 2) b12.setText("O") ; 
+         else if (y == 3) b13.setText("O") ; 
+      }
+      else if (x == 2) {
+         if (y == 1) b21.setText("O") ;
+         else if (y == 2) b22.setText("O") ; 
+         else if (y == 3) b23.setText("O") ; 
+      }
+      else if (x == 3) { 
+         if (y == 1) b31.setText("O") ;
+         else if (y == 2) b32.setText("O") ; 
+         else if (y == 3) b33.setText("O") ; 
+      }
+      if (winner()) System.out.println("Player2 won!"); 
+      else  myturn = true ;
+   }
+
+   /**
+     * Java player
+     */
+   public void actionPerformed(ActionEvent act) {
+	   
+	   if (act.getSource() == startGameButton) {
+		   p1=0;p2=0;
+		   // Set the panel to be initially invisible
+		   clearBoard();
+		   panel.setVisible(true);
+		   additionalPanel.setVisible(false);
+		   
+		   
+		      if (computerCheckbox.isSelected() && !myturn) {
+		    	  startComputerVsComputerGame();
+		        } else {
+		        	myturn = true; 
+		        }
+
+	        
+	        return;
+	    }
+	   if (act.getSource() == stopResetButton) {
+		   p1=0;p2=0;
+	        // Stop the current game and reset the board
+	        clearBoard();
+	        myturn = true;	
+	        
+	        connect();
+	     // Send a message to Prolog indicating to start a new game
+	      /*  try {
+	        	System.out.println(act.getActionCommand()); // Add debug statements like this
+	        	bw.write(act.getActionCommand() + "\n") ; 
+	            bw.flush() ;  
+	            System.out.println("Stop/Reset button clicked"); // Add debug statements like this
+	        } catch (IOException e) {
+	            e.printStackTrace();
+	        }*/
+	               
+	        return;
+	    }
+	   if (act.getSource() == startNGameButton) {
+		   p1=0;p2=0;
+		   panel.setVisible(true);
+		   additionalPanel.setVisible(false);
+		   if (computerCheckbox.isSelected() )
+		   {final int numGames = Integer.parseInt(numGamesField.getText());
+		   
+		    /*try {
+		        final int numGames = Integer.parseInt(numGamesField.getText());
+		        ActionListener startGamesAction = new ActionListener() {
+		            
+
+		            @Override
+		            public void actionPerformed(ActionEvent e) {
+		            	System.out.println("Game:"+gamesCounter);
+		                if (gamesCounter <= numGames) {
+		                    clearBoard();
+		                    startComputerVsComputerGame();
+		                    gamesCounter++;
+		                    gameNumberLabel.setText("Game #: "+ gamesCounter +"   Wins:- Player1(X): "+ p1 +"   Player2(O): " + p2);
+
+		                } else {
+		                    gameTimer.stop();
+		                }
+		            }
+		        };
+		        gameTimer.addActionListener(startGamesAction);
+		        gameTimer.setInitialDelay(0); // Start immediately
+		        gameTimer.start();
+		    } catch (NumberFormatException e) {
+		        // Handle the case where the input in numGamesField is not a valid integer
+		        JOptionPane.showMessageDialog(this, "Invalid input for the number of games.", "Error", JOptionPane.ERROR_MESSAGE);
+		        
+		    }*/
+			   
+			   while(gamesCounter <= numGames) {
+                   clearBoard();
+                   startComputerVsComputerGame();
+                   gamesCounter++;
+                   gameNumberLabel.setText("Game #: "+ gamesCounter +"   Wins:- Player1(X): "+ p1 +"   Player2(O): " + p2);
+		   }}
+		   
+		   else if (humanCheckbox.isSelected()) {
+			myturn = true;
+		    try {
+		        int num = Integer.parseInt(numGamesField.getText());
+		        
+	            System.out.println("Game:" + (c + 1));
+	            clearBoard();
+	            connect();
+	            c++;
+
+	            // Check for a winner after each game
+	            if (winner()) {
+	                System.out.println("Player won Game " + c);
+	                // Automatically reset the game and start a new one
+	                clearBoard();
+	                connect();
+	            } else {
+	                System.out.println("No winner in Game " + c);
+	            }
+		        
+
+		        // Perform actions after playing 'n' games
+		    } catch (NumberFormatException e) {
+		        // Handle the case where the input in numGamesField is not a valid integer
+		        JOptionPane.showMessageDialog(this, "Invalid input for the number of games.", "Error", JOptionPane.ERROR_MESSAGE);
+		    }
+
+            
+			        
+		   }return;
+		}
+
+      if (!myturn) return ; // otherwise 
+      String s = ((JButton)act.getSource()).getText() ; 
+      if (!s.equals("")) return  ; 
+      ((JButton)(act.getSource())).setText("X") ; 
+      try { 
+    	 System.out.println(act.getActionCommand());
+         bw.write(act.getActionCommand() + "\n") ; 
+         bw.flush() ;  
+         System.out.println("message sent");
+      } catch(Exception xx) { System.out.println(xx) ; } 
+      myturn = false ; 
+      if (winner()) 
+    	  {System.out.println("Player1 won!") ;
+    	  
+    	  }
+    	  
+   }
+   
+	
+   /**
+     *  Do we have a winner?
+     */
+   boolean winner() { 
+      boolean hasWinner=  line(b11,b21,b31) ||
+         line(b12,b22,b32) ||
+         line(b13,b23,b33) ||
+         line(b11,b12,b13) ||
+         line(b21,b22,b23) ||
+         line(b31,b32,b33) ||
+         line(b11,b22,b33) ||
+         line(b13,b22,b31)  ;
+      
+      return hasWinner;
+   }
+   
+   
+   public void startComputerVsComputerGame() {
+	    myturn = false; // Disable human interaction during computer vs computer game
+
+	    String currentPlayer = "X";
+
+	    while (!winner()) {
+	        int randomX = (int) (Math.random() * 3) + 1; // Random X coordinate (1, 2, or 3)
+	        int randomY = (int) (Math.random() * 3) + 1; // Random Y coordinate (1, 2, or 3)
+
+	     // Check if the randomly selected button is empty, if not, keep generating random coordinates until an empty button is found
+	        while (!(randomX == 1 && randomY == 1 && b11.getText().isEmpty()) &&
+	                !(randomX == 1 && randomY == 2 && b12.getText().isEmpty()) &&
+	                !(randomX == 1 && randomY == 3 && b13.getText().isEmpty()) &&
+	                !(randomX == 2 && randomY == 1 && b21.getText().isEmpty()) &&
+	                !(randomX == 2 && randomY == 2 && b22.getText().isEmpty()) &&
+	                !(randomX == 2 && randomY == 3 && b23.getText().isEmpty()) &&
+	                !(randomX == 3 && randomY == 1 && b31.getText().isEmpty()) &&
+	                !(randomX == 3 && randomY == 2 && b32.getText().isEmpty()) &&
+	                !(randomX == 3 && randomY == 3 && b33.getText().isEmpty())) {
+	            randomX = (int) (Math.random() * 3) + 1;
+	            randomY = (int) (Math.random() * 3) + 1;
+	        }
+
+	        // Set the button text for the randomly selected button
+	        String actionCommand = String.format("(%d,%d).", randomX, randomY);
+	        if (randomX == 1) {
+	            if (randomY == 1) b11.setText(currentPlayer);
+	            else if (randomY == 2) b12.setText(currentPlayer);
+	            else if (randomY == 3) b13.setText(currentPlayer);
+	        } else if (randomX == 2) {
+	            if (randomY == 1) b21.setText(currentPlayer);
+	            else if (randomY == 2) b22.setText(currentPlayer);
+	            else if (randomY == 3) b23.setText(currentPlayer);
+	        } else if (randomX == 3) {
+	            if (randomY == 1) b31.setText(currentPlayer);
+	            else if (randomY == 2) b32.setText(currentPlayer);
+	            else if (randomY == 3) b33.setText(currentPlayer);
+	        }
+
+	        // Alternate between "X" and "O" for the next move
+	        currentPlayer = (currentPlayer.equals("X")) ? "O" : "X";
+	    }
+	}
+
+   private void updatePlayerInfoLabel() {
+	    String playerType = "";
+	    if (humanCheckbox.isSelected()) {
+	        playerType = "Human";
+	    } else if (computerCheckbox.isSelected()) {
+	        playerType = "Computer";
+	    }
+
+	    playerInfoLabel.setText("Player 1 (X): " + playerType + "    Player 2: Computer");
+	}
+   
+   
+   /**
+     *  Are three buttons marked with same player? 
+     *  If, so color the line and return true.
+     */
+   boolean line(JButton b, JButton c, JButton d) {        
+      if (!b.getText().equals("") &&b.getText().equals(c.getText()) &&
+                c.getText().equals(d.getText()))  {
+         if (b.getText().equals("O")) { 
+            b.setBackground(Color.red) ;
+            c.setBackground(Color.red) ;
+            d.setBackground(Color.red) ;  
+            p2++;
+            gameNumberLabel.setText("Game #: "+ gamesCounter +"   Wins:- Player1(X): "+ p1 +"   Player2(O): " + p2);
+            JOptionPane.showMessageDialog(null, "Player2 won", "Winner", JOptionPane.INFORMATION_MESSAGE);
+         } 
+         else { 
+            b.setBackground(Color.green) ;
+            c.setBackground(Color.green) ;
+            d.setBackground(Color.green) ; 
+            p1++;
+            gameNumberLabel.setText("Game #: "+ gamesCounter +"   Wins:- Player1(X): "+ p1 +"   Player2(O): " + p2);
+            JOptionPane.showMessageDialog(null, "Player1 won", "Winner", JOptionPane.INFORMATION_MESSAGE);
+           
+         }
+         return true ;  
+      } else return false;
+   }
+}
+
+
+/*
+If Java player closes GUI, then Prolog process is terminated.
+Java process monitors "win" status of both players, signals a win,
+and closes the connector and prolog player.
+Prolog justs plays given position.
+Write all of this up; it is interesting.
+*/
+

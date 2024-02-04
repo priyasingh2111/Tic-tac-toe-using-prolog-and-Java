@@ -1,0 +1,607 @@
+[1mtrue.[0m
+
+?- pwd.
+
+
+[32m% c:/users/priya/documents/prolog/
+[0m[1mtrue.[0m
+
+?- cd("C:/ttt-PXS220067").
+
+
+[1mtrue.[0m
+
+?- consult('ttt.pl').
+
+
+[1;31mERROR: c:/ttt-pxs220067/ttt.pl:189:
+ERROR:    Socket error: Connection refused
+[0m[31mWarning: c:/ttt-pxs220067/ttt.pl:189:
+Warning:    Goal (directive) failed: user:connect(54321)
+[0m[31mWarning: c:/ttt-pxs220067/ttt.pl:197:
+Warning:    Singleton variables: [X,Y]
+[0m[1;31mERROR: c:/ttt-pxs220067/ttt.pl:214:
+ERROR:    ttt/0: Unknown procedure: connectedReadStream/1
+[0m[31mWarning: c:/ttt-pxs220067/ttt.pl:214:
+Warning:    Goal (directive) failed: user:ttt
+[0m[1mtrue.[0m
+
+?- listing.
+
+
+
+:- dynamic expand_answer/2.
+:- multifile expand_answer/2.
+
+
+connect(Port) :-
+    tcp_socket(Socket),
+    gethostname(Host),
+    tcp_connect(Socket, Host:Port),
+    tcp_open_socket(Socket, INs, OUTs),
+    assert(connectedReadStream(INs)),
+    assert(connectedWriteStream(OUTs)).
+
+open([A, B, C|_], D) :-
+    (   var(A)
+    ;   A==D
+    ),
+    (   var(B)
+    ;   B==D
+    ),
+    (   var(C)
+    ;   C==D
+    ).
+open([_, _, _, A, B, C|_], D) :-
+    (   var(A)
+    ;   A==D
+    ),
+    (   var(B)
+    ;   B==D
+    ),
+    (   var(C)
+    ;   C==D
+    ).
+open([_, _, _, _, _, _, A, B, C], D) :-
+    (   var(A)
+    ;   A==D
+    ),
+    (   var(B)
+    ;   B==D
+    ),
+    (   var(C)
+    ;   C==D
+    ).
+open([A, _, _, B, _, _, C, _, _], D) :-
+    (   var(A)
+    ;   A==D
+    ),
+    (   var(B)
+    ;   B==D
+    ),
+    (   var(C)
+    ;   C==D
+    ).
+open([_, A, _, _, B, _, _, C, _], D) :-
+    (   var(A)
+    ;   A==D
+    ),
+    (   var(B)
+    ;   B==D
+    ),
+    (   var(C)
+    ;   C==D
+    ).
+open([_, _, A, _, _, B, _, _, C], D) :-
+    (   var(A)
+    ;   A==D
+    ),
+    (   var(B)
+    ;   B==D
+    ),
+    (   var(C)
+    ;   C==D
+    ).
+open([A, _, _, _, B, _, _, _, C], D) :-
+    (   var(A)
+    ;   A==D
+    ),
+    (   var(B)
+    ;   B==D
+    ),
+    (   var(C)
+    ;   C==D
+    ).
+open([_, _, A, _, B, _, C, _, _], D) :-
+    (   var(A)
+    ;   A==D
+    ),
+    (   var(B)
+    ;   B==D
+    ),
+    (   var(C)
+    ;   C==D
+    ).
+
+h(X, Y) :-
+    record(x, X, Y),
+    showBoard.
+
+:- dynamic resource/2.
+:- multifile resource/2.
+
+
+spy(Player, Position, Value) :-
+    spy,
+    !,
+    write(Player),
+    write(' '),
+    write(Position),
+    write(' '),
+    writeln(Value).
+spy(_, _, _).
+
+cutoff(_Player, Move, Value, _D, _Alpha, Beta, _Moves, _Position, _Record, (Move, Value)) :-
+    Value>=Beta,
+    !.
+cutoff(Player, Move, Value, D, Alpha, Beta, Moves, Position, _Record, BestMove) :-
+    Alpha<Value,
+    Value<Beta,
+    !,
+    evaluate_and_choose(Player,
+                        Moves,
+                        Position,
+                        D,
+                        Value,
+                        Beta,
+                        Move,
+                        BestMove).
+cutoff(Player, _Move, Value, D, Alpha, Beta, Moves, Position, Record, BestMove) :-
+    Value=<Alpha,
+    !,
+    evaluate_and_choose(Player,
+                        Moves,
+                        Position,
+                        D,
+                        Alpha,
+                        Beta,
+                        Record,
+                        BestMove).
+
+mark(X) :-
+    var(X),
+    write(#).
+mark(X) :-
+    \+ var(X),
+    write(X).
+
+other_player(o, x).
+other_player(x, o).
+
+:- dynamic file_search_path/2.
+:- multifile file_search_path/2.
+
+file_search_path(library, Dir) :-
+    library_directory(Dir).
+file_search_path(swi, A) :-
+    system:current_prolog_flag(home, A).
+file_search_path(swi, A) :-
+    system:current_prolog_flag(shared_home, A).
+file_search_path(library, app_config(lib)).
+file_search_path(library, swi(library)).
+file_search_path(library, swi(library/clp)).
+file_search_path(foreign, swi(A)) :-
+    system:
+    (   current_prolog_flag(apple_universal_binary, true),
+        A='lib/fat-darwin'
+    ).
+file_search_path(foreign, swi(A)) :-
+    system:
+    (   \+ current_prolog_flag(windows, true),
+        current_prolog_flag(arch, B),
+        atom_concat('lib/', B, A)
+    ).
+file_search_path(foreign, swi(A)) :-
+    system:
+    (   (   current_prolog_flag(windows, true)
+        ->  A=bin
+        ;   A=lib
+        )
+    ).
+file_search_path(path, A) :-
+    system:
+    (   getenv('PATH', B),
+        (   current_prolog_flag(windows, true)
+        ->  atomic_list_concat(C, ;, B)
+        ;   atomic_list_concat(C, :, B)
+        ),
+        '$member'(A, C)
+    ).
+file_search_path(user_app_data, A) :-
+    system:'$xdg_prolog_directory'(data, A).
+file_search_path(common_app_data, A) :-
+    system:'$xdg_prolog_directory'(common_data, A).
+file_search_path(user_app_config, A) :-
+    system:'$xdg_prolog_directory'(config, A).
+file_search_path(common_app_config, A) :-
+    system:'$xdg_prolog_directory'(common_config, A).
+file_search_path(app_data, user_app_data('.')).
+file_search_path(app_data, common_app_data('.')).
+file_search_path(app_config, user_app_config('.')).
+file_search_path(app_config, common_app_config('.')).
+file_search_path(app_preferences, user_app_config('.')).
+file_search_path(user_profile, app_preferences('.')).
+file_search_path(autoload, swi(library)).
+file_search_path(autoload, pce(prolog/lib)).
+file_search_path(autoload, app_config(lib)).
+file_search_path(pack, app_data(pack)).
+file_search_path(library, PackLib) :-
+    '$pack':pack_dir(_Name, prolog, PackLib).
+file_search_path(foreign, PackLib) :-
+    '$pack':pack_dir(_Name, foreign, PackLib).
+file_search_path(pce, PceHome) :-
+    link_xpce:
+    (   current_prolog_flag(xpce, true),
+        pcehome_(PceHome)
+    ).
+file_search_path(library, pce('prolog/lib')).
+file_search_path(foreign, pce(ArchLib)) :-
+    link_xpce:
+    (   current_prolog_flag(arch, Arch),
+        atom_concat('lib/', Arch, ArchLib)
+    ).
+
+:- dynamic resource/3.
+:- multifile resource/3.
+
+
+s :-
+    showBoard.
+
+:- dynamic term_expansion/4.
+:- multifile term_expansion/4.
+
+
+mark(Player, [X|_], 1, 1) :-
+    var(X),
+    X=Player.
+mark(Player, [_, X|_], 2, 1) :-
+    var(X),
+    X=Player.
+mark(Player, [_, _, X|_], 3, 1) :-
+    var(X),
+    X=Player.
+mark(Player, [_, _, _, X|_], 1, 2) :-
+    var(X),
+    X=Player.
+mark(Player, [_, _, _, _, X|_], 2, 2) :-
+    var(X),
+    X=Player.
+mark(Player, [_, _, _, _, _, X|_], 3, 2) :-
+    var(X),
+    X=Player.
+mark(Player, [_, _, _, _, _, _, X|_], 1, 3) :-
+    var(X),
+    X=Player.
+mark(Player, [_, _, _, _, _, _, _, X|_], 2, 3) :-
+    var(X),
+    X=Player.
+mark(Player, [_, _, _, _, _, _, _, _, X|_], 3, 3) :-
+    var(X),
+    X=Player.
+
+:- multifile prolog_clause_name/2.
+
+
+:- dynamic goal_expansion/4.
+:- multifile goal_expansion/4.
+
+
+move(P, (1, 1), [X1|R], [P|R]) :-
+    var(X1).
+move(P, (2, 1), [X1, X2|R], [X1, P|R]) :-
+    var(X2).
+move(P, (3, 1), [X1, X2, X3|R], [X1, X2, P|R]) :-
+    var(X3).
+move(P, (1, 2), [X1, X2, X3, X4|R], [X1, X2, X3, P|R]) :-
+    var(X4).
+move(P, (2, 2), [X1, X2, X3, X4, X5|R], [X1, X2, X3, X4, P|R]) :-
+    var(X5).
+move(P, (3, 2), [X1, X2, X3, X4, X5, X6|R], [X1, X2, X3, X4, X5, P|R]) :-
+    var(X6).
+move(P, (1, 3), [X1, X2, X3, X4, X5, X6, X7|R], [X1, X2, X3, X4, X5, X6, P|R]) :-
+    var(X7).
+move(P, (2, 3), [X1, X2, X3, X4, X5, X6, X7, X8|R], [X1, X2, X3, X4, X5, X6, X7, P|R]) :-
+    var(X8).
+move(P, (3, 3), [X1, X2, X3, X4, X5, X6, X7, X8, X9|R], [X1, X2, X3, X4, X5, X6, X7, X8, P|R]) :-
+    var(X9).
+
+handle(4, 4) :-
+    retractall(board(_)),
+    assert(board([ _,
+                   _,
+                   _,
+                   _,
+                   _,
+                   _,
+                   _,
+                   _,
+                   _
+                 ])),
+    init,
+    connectedWriteStream(OStream),
+    write(OStream, (X, Y)),
+    nl(OStream),
+    flush_output(OStream).
+handle(X, Y) :-
+    record(x, X, Y),
+    board(B),
+    alpha_beta(o, 2, B, -200, 200, (U, V), _Value),
+    record(o, U, V),
+    connectedWriteStream(OStream),
+    write(OStream, (U, V)),
+    nl(OStream),
+    flush_output(OStream).
+
+:- dynamic library_directory/1.
+:- multifile library_directory/1.
+
+
+c :-
+    board(B),
+    alpha_beta(o, 2, B, -200, 200, (X, Y), _Value),
+    record(o, X, Y),
+    showBoard.
+
+showBoard :-
+    board([ Z1,
+            Z2,
+            Z3,
+            Z4,
+            Z5,
+            Z6,
+            Z7,
+            Z8,
+            Z9
+          ]),
+    write('    '),
+    mark(Z1),
+    write(' '),
+    mark(Z2),
+    write(' '),
+    mark(Z3),
+    nl,
+    write('    '),
+    mark(Z4),
+    write(' '),
+    mark(Z5),
+    write(' '),
+    mark(Z6),
+    nl,
+    write('    '),
+    mark(Z7),
+    write(' '),
+    mark(Z8),
+    write(' '),
+    mark(Z9),
+    nl.
+
+:- multifile prolog_predicate_name/2.
+
+
+:- multifile prolog_list_goal/1.
+
+
+evaluate_and_choose(Player, [Move|Moves], Position, D, Alpha, Beta, Record, BestMove) :-
+    move(Player, Move, Position, Position1),
+    other_player(Player, OtherPlayer),
+    alpha_beta(OtherPlayer,
+               D,
+               Position1,
+               Alpha,
+               Beta,
+               _OtherMove,
+               Value),
+    Value1 is -Value,
+    cutoff(Player,
+           Move,
+           Value1,
+           D,
+           Alpha,
+           Beta,
+           Moves,
+           Position,
+           Record,
+           BestMove).
+evaluate_and_choose(_Player, [], _Position, _D, Alpha, _Beta, Move, (Move, Alpha)).
+
+:- multifile message_property/2.
+
+
+:- dynamic spy/0.
+
+spy.
+
+ttt :-
+    connectedReadStream(IStream),
+    read(IStream, (X, Y)),
+    handle(X, Y),
+    ttt.
+
+:- dynamic prolog_file_type/2.
+:- multifile prolog_file_type/2.
+
+prolog_file_type(pl, prolog).
+prolog_file_type(prolog, prolog).
+prolog_file_type(qlf, prolog).
+prolog_file_type(qlf, qlf).
+prolog_file_type(A, executable) :-
+    system:current_prolog_flag(shared_object_extension, A).
+prolog_file_type(dylib, executable) :-
+    system:current_prolog_flag(apple, true).
+
+alpha_beta(Player, 0, Position, _Alpha, _Beta, _NoMove, Value) :-
+    value(Position, Value),
+    spy(Player, Position, Value).
+alpha_beta(Player, D, Position, Alpha, Beta, Move, Value) :-
+    D>0,
+    findall((X, Y),
+            mark(Player, Position, X, Y),
+            Moves),
+    Alpha1 is -Beta,
+    Beta1 is -Alpha,
+    D1 is D+ -1,
+    evaluate_and_choose(Player,
+                        Moves,
+                        Position,
+                        D1,
+                        Alpha1,
+                        Beta1,
+                        nil,
+                        (Move, Value)).
+
+:- dynamic message_hook/3.
+:- multifile message_hook/3.
+
+
+:- dynamic exception/3.
+:- multifile exception/3.
+
+
+:- dynamic portray/1.
+:- multifile portray/1.
+
+
+:- dynamic lookahead/1.
+
+lookahead(2).
+
+record(Player, X, Y) :-
+    retract(board(B)),
+    mark(Player, B, X, Y),
+    assert(board(B)).
+
+init :-
+    retractall(board(_)),
+    assert(board([ _Z1,
+                   _Z2,
+                   _Z3,
+                   _Z4,
+                   _Z5,
+                   _Z6,
+                   _Z7,
+                   _Z8,
+                   _Z9
+                 ])).
+
+:- thread_local thread_message_hook/3.
+:- dynamic thread_message_hook/3.
+:- volatile thread_message_hook/3.
+
+
+value(Board, 100) :-
+    win(Board, o),
+    !.
+value(Board, -100) :-
+    win(Board, x),
+    !.
+value(Board, E) :-
+    findall(o, open(Board, o), MAX),
+    length(MAX, Emax),
+    findall(x, open(Board, x), MIN),
+    length(MIN, Emin),
+    E is Emax-Emin.
+
+:- dynamic prolog_load_file/2.
+:- multifile prolog_load_file/2.
+
+
+:- dynamic board/1.
+
+board([_, _, _, _, _, _, _, _, _]).
+
+search(Position, Depth, (Move, Value)) :-
+    alpha_beta(o, Depth, Position, -100, 100, Move, Value).
+
+:- dynamic term_expansion/2.
+:- multifile term_expansion/2.
+
+
+win([Z1, Z2, Z3|_], P) :-
+    Z1==P,
+    Z2==P,
+    Z3==P.
+win([_, _, _, Z1, Z2, Z3|_], P) :-
+    Z1==P,
+    Z2==P,
+    Z3==P.
+win([_, _, _, _, _, _, Z1, Z2, Z3], P) :-
+    Z1==P,
+    Z2==P,
+    Z3==P.
+win([Z1, _, _, Z2, _, _, Z3, _, _], P) :-
+    Z1==P,
+    Z2==P,
+    Z3==P.
+win([_, Z1, _, _, Z2, _, _, Z3, _], P) :-
+    Z1==P,
+    Z2==P,
+    Z3==P.
+win([_, _, Z1, _, _, Z2, _, _, Z3], P) :-
+    Z1==P,
+    Z2==P,
+    Z3==P.
+win([Z1, _, _, _, Z2, _, _, _, Z3], P) :-
+    Z1==P,
+    Z2==P,
+    Z3==P.
+win([_, _, Z1, _, Z2, _, Z3, _, _], P) :-
+    Z1==P,
+    Z2==P,
+    Z3==P.
+
+:- dynamic prolog_exception_hook/4.
+:- multifile prolog_exception_hook/4.
+
+prolog_exception_hook(error(E, context(Ctx0, Msg)), error(E, context(prolog_stack(Stack), Msg)), Fr, GuardSpec) :-
+    prolog_stack:
+    (   current_prolog_flag(backtrace, true),
+        \+ is_stack(Ctx0, _Frames),
+        (   atom(GuardSpec)
+        ->  debug(backtrace,
+                  'Got uncaught (guard = ~q) exception ~p (Ctx0=~p)',
+                  [GuardSpec, E, Ctx0]),
+            stack_guard(GuardSpec),
+            Guard=GuardSpec
+        ;   prolog_frame_attribute(GuardSpec,
+                                   predicate_indicator,
+                                   Guard),
+            debug(backtrace,
+                  'Got exception ~p (Ctx0=~p, Catcher=~p)',
+                  [E, Ctx0, Guard]),
+            stack_guard(Guard)
+        ),
+        (   current_prolog_flag(backtrace_depth, Depth)
+        ->  Depth>0
+        ;   Depth=20
+        ),
+        get_prolog_backtrace(Depth,
+                             Stack0,
+                             [frame(Fr), guard(Guard)]),
+        debug(backtrace, 'Stack = ~p', [Stack0]),
+        clean_stack(Stack0, Stack1),
+        join_stacks(Ctx0, Stack1, Stack)
+    ).
+
+:- dynamic expand_query/4.
+:- multifile expand_query/4.
+
+
+:- dynamic goal_expansion/2.
+:- multifile goal_expansion/2.
+
+[1mtrue.[0m
+
+?- halt.
+
+
